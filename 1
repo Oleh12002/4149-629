@@ -1,0 +1,48 @@
+pip install openai google-ads
+import openai
+from google.ads.google_ads.client import GoogleAdsClient
+from google.ads.google_ads.errors import GoogleAdsException
+
+# Настройка OpenAI
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+# Настройка Google Ads
+google_ads_client = GoogleAdsClient.load_from_storage('path_to_your_google_ads.yaml')
+
+def generate_ad_text(prompt):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=100
+    )
+    return response.choices[0].text.strip()
+
+def create_google_ads_campaign():
+    client = google_ads_client
+    campaign_service = client.get_service('CampaignService', version='v11')
+
+    # Пример создания рекламной кампании
+    campaign_operation = client.get_type('CampaignOperation', version='v11')
+    campaign = campaign_operation.create
+    campaign.name = 'Campaign #1'
+    campaign.advertising_channel_type = client.get_type('AdvertisingChannelTypeEnum', version='v11').SEARCH
+    campaign.status = client.get_type('CampaignStatusEnum', version='v11').PAUSED
+
+    try:
+        campaign_response = campaign_service.mutate_campaigns(customer_id, [campaign_operation])
+        print('Created campaign with resource name: ', campaign_response.results[0].resource_name)
+    except GoogleAdsException as ex:
+        print('Request failed with status:', ex.error.code().name)
+        print('Error details:', ex.failure.errors)
+
+def main():
+    prompt = "Создайте рекламный текст для кампании по продаже спортивной обуви."
+    ad_text = generate_ad_text(prompt)
+    print(f'Generated Ad Text: {ad_text}')
+    
+    # Здесь можно добавить функцию для создания рекламных объявлений с использованием ad_text
+    create_google_ads_campaign()
+
+if __name__ == "__main__":
+    main()
+
